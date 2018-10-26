@@ -1,0 +1,245 @@
+Database implementation
+-----------------------
+
+Each School
+-----------------
+Admin Table: to store admins, 
+				Fields(id, title, fname, email, school, dept, password)
+
+courses Table: Stores list of courses in a school
+				Fields (id, course_code, course description, Level, dept, school)
+
+Students Table: Store students data for uploading and posting reviews
+				Fields(id, email, username, password, matric_no, dept, school, status, rating_id, grade_check)
+
+Class Rep Table: Stores the list of all class reps who can create a session and when they create a session
+				Fields(id, student_id, session_stat, course-code, course description, lecture_id, lecture_env_id, time)
+
+Token Table: Stores list of generated Tokens
+				Fields(id, student_id, token, password_retrieve)
+
+Lecturer Table: Stores list of lecturers in a school with their courses taken
+				Fields (id, title, name, courses, db_name)
+
+Lecture_Env Table: Stores list of lecture environments in a school
+				Fields (id, description, school)
+
+Individual Lecturer Grading: Stores grading for each lecturer
+				Rows: Courses taken by lecturer (immediate and overall)
+				columns: (a to z, time, rating_id, no_student_graded, lecture_env_id, no_of_lectures, validate)
+
+Grading Table: stores all overall gradings
+				Fields(id, a-z, rating_id, student_id, course_id, time, recommendation, lecturer_id, lecture_env_id)
+
+
+Relationship
+--------------
+Admin Table ---> Class Rep Table (Admin Table modifies and selects class Rep using class rep email)
+
+Gradings Value --> Gradings Table (identifies the gradings and recommendation using Gradings Table id) 
+
+PSEUDOCODE IMPLEMENTATION
+Student Interface _ PRELOGIN
+------------------
+	if student is not logged in yet and clicks register button
+
+		SIGNING UP PROCESS
+		Register: 
+		----------
+		Recieves and inserts new user into the students table
+		Details to be recieved: email, username, matric_no, school, dept, password
+		insert Details to be added to Student database:
+			email, username, matric_no, school, dept, password, status, ratings_id
+			status: used to check if account is verified or not
+			token: used to generate a token for email confirmation
+
+		VerifyEmail	
+		------------
+		Generate confirmation token
+		send token to email address
+		update Token table with student_id, token, reason_for_token(1: for verification)
+		recieve token input from the user
+		if user_token == token in database:
+			process and verify account
+			update status column in student's database to 1
+
+		if user_id in class Rep table:
+			load clas rep ui
+		else:
+			load up normal Ui
+
+	if student clicks Login button:
+		LOGIN PROCESS
+		Login:
+			
+			Retrieve user input (Email/Username and password)
+			check in student database if students details match any existing record
+			if yes:
+				return Full Student details proceed to grading Ui
+				if keep loggedIn is checked:
+					Store students details in cookies and keep updating
+			else:
+				if student_id in Token table and password_retrieve ==1:
+					load Reset Password Ui
+
+	if student clicks Forgot Password Button:
+		RESET PASSWORD PROCESS:
+		Reset Password:
+			Retrieve email used to register account
+			Generate token
+			Send token to email Address
+			update Token Table
+			Retrieve confirmation code from user
+			if user code matches code in Token Database:
+				proceed to input new password
+				update Student Table with new password
+				delete Student_id record from token table
+				proceed to login
+
+Class Rep Interface: POST_LOGIN
+	Create Session: Creates a Session For users to grade lecturers
+		CreateSession:
+			fetch all course code and course Description from Courses Database for the class Rep Level and Dept into dropdown
+			fetch all Lecture Environment in the department into dropdown
+			fetch all lecturers that teach the course with course code fetched into dropdown
+			select Course Code, Lecture Environment, Lecturer, Time from Ui
+			Start Session:
+				fetch value of number_of_lecture from lecturer Grading table and increment
+				rating_id = course_code + _ +  value above
+				update class Rep Table set session_start: True, lecture, course_code, course_description, lecturer, lecture_Env, time, rating-id
+				display session started
+
+		Close Session:
+			select Session to close:
+			update class Rep table revert create Session params
+
+		reviewRating:
+			get all gradings with same rating_id
+			compute average for all values
+			display average rating
+			display some recommendations
+			if click verify:
+				update Lecturer Grading Table, set validate:1 so ADmin can view it
+
+Student|Class Rep Interface: POST_LOGIN
+	Logout:
+		destroy cookies
+		return to Login Ui
+
+	change Password:
+		retrieve new password
+		update student Table, set password to new value of password
+		display complete
+
+Student Interface: POST_LOGIN
+	View Sessions:
+		Fetch class Rep record
+		Check class Rep Table for record with same Dept and level
+		if session_start is ON:
+			display session details: {lecturer, Lecture Env, Course, course code, time}
+		if session is clicked:
+			redirect to grading Page
+			display all grading metrics stored probably in an array
+			if submit grading:
+				insert grading into grading table, rating_id, student_id, recommedation, lecturer_id, lecture_env_id, time
+				display success
+			else:
+				discard info and return to home page
+
+	ViewAllGradings:
+		Fetch all from Gradings table where student_id = current_student_id
+		load each into a dropdown box
+		if user clicks:
+			display all information about the lecture
+
+
+Admin Interface: PRELOGIN:
+if admi is not logged in yet and clicks register button
+	Register:
+		Recieve details from Admin
+		repeat as in Student interface but with Admin Table
+
+	Login:
+		Do as in Student but with Admin Table
+
+	ResetPassword:
+		Repeat as in Student interface
+
+Admin Interface: POST_LOGIN
+	Select ClassRep:
+		Select Class
+		retrieve names of all class members of dept in Student Table
+		Select ClassRep from Dropdown names/Type classrep username/email
+		check if classRep already exists in Class Rep Table
+		if so:
+			delete record
+		insert into classRep Table details of new classRep(student_id)
+		Display sucess
+
+	View Gradings:
+		select Class from list of classes available
+		select Course from list of courses offereed by class
+		get all course rating from grading Table with same course code
+		separate them according to rating_id
+		for each rating_id:
+			get lecturer details for course in lecturer table
+			display lecture grading 
+			check number of recommendations required to view
+			display first n recommendatations where n=number of recommendations needed to view
+
+	View Lecturer Performance:
+		get all lecturers from lecturers table
+		fetch gradings from table where lecturer id are same
+		calculate overall average and display
+
+	change Password:
+		same as student
+
+	Logout:
+		Destroy Sessions 
+		return to home Page
+
+
+
+
+
+METRICS:
+To what extend do you agree with the following statements about what this lecturer does regarding this course
+a: Provides students with course outlines at the beginning of each semester
+b: Informs students about the course grading system at the beginneing of each semester
+c: Informs students what he/she expects from them on this course at the beginning of the semester
+d: Provides or directs students to additional reading sources
+
+This Lecturer
+e: is considerate to students
+f: is tolerant of students
+g: Makes the course challenging but interesting
+h: Encourages students to understand all phases of the course
+i: is Fair with his/her grading system (marks)
+j: Treatss students equally regardless of gender
+k: Has high ezpectaion for students
+
+This lecturer is accessible to students for academic Discussion;
+l: inside the classroom
+m: Outside the classroom
+n: Not available at all
+
+How would you rate lecturer's class Attendance
+o: Always puntual to class
+p: Always late to class
+q: Sometimes late to class
+r: Does not come to class often
+
+Lecturer's Overall Effort for this course
+
+s: Uses lecture time to tell glorifying stories
+t: Very knowledgeable of the subject matter
+u: Uses variety of examples to illustrate a point
+v: Returns test grades back to students on time
+w: Shows good concerns for all students
+x: The lecturer demands gifts from students in order to give BETTER GRADES
+y: uses some modern technologies in teaching (projectors, power points and other audio Visual)
+
+COMMENT FREELY ON THE COURSE AND THE LECTURER
+
+MAKE SUGGESTIONS ON WAYS OF IMPROVING THE DELIVERY OF THE COURSE

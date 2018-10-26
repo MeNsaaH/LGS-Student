@@ -1,0 +1,16 @@
+<RCC>
+  <qresource>
+    <file alias='menu_close'>images/close_menu.png</file>
+    <file alias="menu">images/menu.png</file>
+    <file alias="futminna_mini">images/futminna2_.png</file>
+    <file alias="futminna_logo">images/futminna2.png</file>
+    <file alias="close">images/close.png</file>
+    <file alias="critical">images/critical.png</file>
+    <file alias="home">images/home.png</file>
+    <file alias="quit">images/quit.png</file>
+    <file alias="quit2">images/quit2.png</file>
+    <file alias="futminna">images/futminna.png</file>
+    <file alias="icon">images/icon.png</file>
+    <file alias="back">images/back.png</file>
+  </qresource>
+</RCC>
